@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">Documents</div>
+            <div class="upload-area" id="uploadArea">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 24px; margin-bottom: 8px;"></i>
+                <p>Drop PDF here</p>
+                <input type="file" id="fileInput" accept=".pdf" hidden>
+            </div>
+            
+            <div class="upload-progress" id="uploadProgress" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="progressText" style="font-size: 0.75rem; margin-top: 5px; color: #8e8ea0; display: none;"></div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Status</div>
+            <div class="status-item">
+                <i class="fas fa-file-pdf" id="pdfIcon"></i>
+                <span id="pdfStatus">No PDF uploaded</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-database" id="dbIcon"></i>
+                <span id="vectorStatus">Not Ready</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section" style="border:none; flex-grow: 1; overflow-y: auto;">
+            <div class="sidebar-title">Examples</div>
+            <button class="example-btn" onclick="useExample(this)">
+                <i class="far fa-comment-alt"></i> Dress code policy?
+            </button>
+            <button class="example-btn" onclick="useExample(this)">
+                <i class="far fa-comment-alt"></i> Vacation days?
+            </button>
+            <button class="example-btn" onclick="useExample(this)">
+                <i class="far fa-comment-alt"></i> Remote work?
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-screen" id="welcomeMessage">
+                <div class="welcome-icon">
+                    <i class="fas fa-book-open" style="color: #343541;"></i>
+                </div>
+                <p style="color: #8e8ea0;">Upload a handbook PDF to the sidebar to get started.</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <input type="text" 
+                           id="questionInput" 
+                           placeholder="Send a message..." 
+                           autocomplete="off"
+                           disabled>
+                    <button id="sendBtn" class="send-btn" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="disclaimer">
+                    We can make mistakes, so double-check it
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isProcessing = false;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            checkStatus();
+            
+            const fileInput = document.getElementById('fileInput');
+            const uploadArea = document.getElementById('uploadArea');
+            
+            fileInput.addEventListener('change', handleFileSelect);
+            uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+            uploadArea.addEventListener('dragleave', () => { uploadArea.classList.remove('drag-over'); });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+                if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files[0]);
+            });
+            uploadArea.addEventListener('click', () => { fileInput.click(); });
+            
+            const questionInput = document.getElementById('questionInput');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            questionInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !isProcessing) askQuestion();
+            });
+            sendBtn.addEventListener('click', askQuestion);
+        });
+        
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) handleFileUpload(file);
+        }
+        
+        function handleFileUpload(file) {
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                alert('Please upload a PDF file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            uploadProgress.style.display = 'block';
+            progressText.style.display = 'block';
+            progressFill.style.width = '30%';
+            progressText.textContent = 'Uploading...';
+            
+            fetch('/upload', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                progressFill.style.width = '100%';
+                progressText.textContent = 'Complete';
+                setTimeout(checkStatus, 1000);
+                setTimeout(() => {
+                    uploadProgress.style.display = 'none';
+                    progressText.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 2000);
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+                uploadProgress.style.display = 'none';
+            });
+        }
+        
+        function checkStatus() {
+            fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.pdfs_uploaded) {
+                    const pdfIcon = document.getElementById('pdfIcon');
+                    pdfIcon.className = 'fas fa-check status-ready';
+                    document.getElementById('pdfStatus').textContent = `${data.pdf_count} PDF Loaded`;
+                    document.getElementById('pdfStatus').className = 'status-ready';
+                }
+                if (data.vectorstore_ready) {
+                    const dbIcon = document.getElementById('dbIcon');
+                    dbIcon.className = 'fas fa-check status-ready';
+                    document.getElementById('vectorStatus').textContent = 'Ready';
+                    document.getElementById('vectorStatus').className = 'status-ready';
+                    document.getElementById('questionInput').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                }
+            });
+        }
+        
+        function useExample(button) {
+            document.getElementById('questionInput').value = button.innerText.trim();
+            document.getElementById('questionInput').focus();
+        }
+        
+        function askQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+            if (!question || isProcessing) return;
+            
+            addMessageToChat('user', question);
+            questionInput.value = '';
+            
+            const typingIndicator = addTypingIndicator();
+            isProcessing = true;
+            
+            fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                typingIndicator.remove();
+                if (data.error) {
+                    addMessageToChat('error', data.error);
+                } else {
+                    addMessageToChat('assistant', data.answer, data.sources);
+                }
+                isProcessing = false;
+            })
+            .catch(error => {
+                typingIndicator.remove();
+                addMessageToChat('error', 'Error: ' + error.message);
+                isProcessing = false;
+            });
+        }
+
+        function formatRawText(text) {
+            let formatted = text.replace(/■/g, '\n-');
+            formatted = formatted.replace(/\. ([A-Z][a-z]+ [A-Z][a-z]+)/g, '.\n\n$1');
+            return formatted;
+        }
+        
+        function addMessageToChat(role, content, sources = null) {
+            const chatContainer = document.getElementById('chatContainer');
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            if (welcomeMessage) welcomeMessage.style.display = 'none';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${role}-message`;
+            
+            let icon = role === 'user' ? 'fa-user' : 'fa-robot';
+            let avatarClass = role === 'user' ? 'user-avatar' : 'assistant-avatar';
+            
+            let finalContent = content;
+            if (role === 'assistant' && typeof marked !== 'undefined') {
+                const preProcessed = formatRawText(content);
+                finalContent = marked.parse(preProcessed);
+            }
+
+            // Since we display source info inside the text now, we can skip the extra footer
+            // or keep it if you want double redundancy. Set to empty string for cleaner look.
+            let sourcesHtml = ''; 
+            
+            messageDiv.innerHTML = `
+                <div class="message-wrapper">
+                    <div class="avatar ${avatarClass}">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="message-content">
+                        ${finalContent}
+                        ${sourcesHtml}
+                    </div>
+                </div>
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                 chatContainer.scrollTo({
+                    top: chatContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+        
+        function addTypingIndicator() {
+            const chatContainer = document.getElementById('chatContainer');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message assistant-message';
+            
+            typingDiv.innerHTML = `
+                <div class="message-wrapper">
+                    <div class="avatar assistant-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="typing-indicator">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return typingDiv;
+        }
+    </script>
+</body>
+</html>

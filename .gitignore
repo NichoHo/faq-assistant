@@ -1,0 +1,34 @@
+# --- Python Standard ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual Environments ---
+# It is critical not to upload your libraries
+venv/
+env/
+.venv/
+
+# --- Environment Variables ---
+# Never upload API keys (OpenAI, Pinecone, etc.)
+.env
+.env.local
+
+# --- Project Specific Data ---
+# Ignore the specific data folder containing PDFs
+data/
+# If you want to keep the folder structure but ignore files, use:
+# data/*
+# !data/.gitkeep
+
+# --- Vector Stores ---
+# Ignore the generated vector database files (likely large binaries)
+vectorstore/
+
+# --- IDE Settings ---
+.vscode/
+.idea/
+
+# --- OS Generated Files ---
+.DS_Store
+Thumbs.db
