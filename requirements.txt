@@ -8,4 +8,4 @@ huggingface-hub==0.24.0
 numpy==1.26.4
 pinecone-client==5.0.1
 langchain-pinecone>=0.2.0
-vercel-blob==0.1.1
+vercel>=0.5.9

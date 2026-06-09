@@ -43,9 +43,14 @@ def upload_file():
         file.save(file_path)
 
         try:
-            # Back up the file to Vercel Blob
-            with open(file_path, "rb") as f:
-                vercel_blob.put(filename, f.read(), options={"access": "public"})
+            # Back up the file using the official Vercel SDK
+            from vercel import blob
+            
+            blob.upload_file(
+                local_path=file_path,
+                path=filename,
+                access="public"
+            )
                 
             from pdf_ingest import process_pdfs
 
