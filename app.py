@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify
 import os
-import vercel_blob
 
 from config import (
     PDF_DIR,
