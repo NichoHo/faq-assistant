@@ -48,7 +48,7 @@ def upload_file():
             blob.upload_file(
                 local_path=file_path,
                 path=filename,
-                access="public"
+                access="private"
             )
                 
             from pdf_ingest import process_pdfs
