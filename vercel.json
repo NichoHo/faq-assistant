@@ -1,16 +1,17 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
+  ],
   "routes": [
     {
       "src": "/(.*)",
       "dest": "app.py"
     }
   ],
-  "functions": {
-    "app.py": {
-      "excludeFiles": "{data/**,requirements-local.txt,.venv/**,venv/**,**/__pycache__/**}"
-    }
-  },
   "env": {
     "FAQ_DATA_ROOT": "/tmp/faq-assistant"
   }
