@@ -1,6 +1,32 @@
 import os
+from typing import List
+
+from langchain_core.embeddings import Embeddings
 
 _embeddings = None
+
+
+class HuggingFaceInferenceEmbeddings(Embeddings):
+
+    def __init__(self, model: str, api_token: str):
+        from huggingface_hub import InferenceClient
+
+        self.model = model
+        self._client = InferenceClient(model=model, token=api_token)
+
+    def _to_vector(self, result) -> List[float]:
+        import numpy as np
+
+        arr = np.asarray(result, dtype=np.float32)
+        if arr.ndim == 2:
+            arr = arr[0] if arr.shape[0] == 1 else arr.mean(axis=0)
+        return arr.tolist()
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return [self._to_vector(self._client.feature_extraction(text)) for text in texts]
+
+    def embed_query(self, text: str) -> List[float]:
+        return self._to_vector(self._client.feature_extraction(text))
 
 
 def get_embeddings():
@@ -24,11 +50,9 @@ def get_embeddings():
 
         os.environ.setdefault("HUGGINGFACEHUB_API_TOKEN", hf_token)
 
-        from langchain_huggingface import HuggingFaceEndpointEmbeddings
-
-        _embeddings = HuggingFaceEndpointEmbeddings(
+        _embeddings = HuggingFaceInferenceEmbeddings(
             model=model_name,
-            huggingfacehub_api_token=hf_token,
+            api_token=hf_token,
         )
         return _embeddings
 
