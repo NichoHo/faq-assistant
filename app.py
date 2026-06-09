@@ -34,8 +34,11 @@ def upload_file():
 
     if file and allowed_file(file.filename):
         from werkzeug.utils import secure_filename
+        import time
 
-        filename = secure_filename(file.filename)
+        base_filename = secure_filename(file.filename)
+        # Add a unique timestamp so Vercel never sees a duplicate name
+        filename = f"{int(time.time())}_{base_filename}"
         file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         
         # Save locally to /tmp for PyPDFLoader to read
