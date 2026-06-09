@@ -2,9 +2,9 @@ import os
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
+from langchain_pinecone import PineconeVectorStore
 
-from config import PDF_DIR, get_pdf_source_dir, get_vectorstore_dir, ensure_runtime_dirs
+from config import PDF_DIR, get_pdf_source_dir, ensure_runtime_dirs
 from embeddings import get_embeddings
 
 ensure_runtime_dirs()
@@ -47,16 +47,19 @@ def chunk_documents(docs, chunk_size=1000, chunk_overlap=200):
 
 
 def build_vectorstore(chunks, persist_directory=None):
-    """Create embeddings and build FAISS vector store."""
-    persist_directory = persist_directory or get_vectorstore_dir()
+    """Create embeddings and build Pinecone vector store."""
     print("🤖 Creating embeddings model: all-MiniLM-L6-v2")
     embeddings = get_embeddings()
 
-    print(f"💾 Building FAISS vector store at: {persist_directory}")
-    os.makedirs(persist_directory, exist_ok=True)
-    vectordb = FAISS.from_documents(documents=chunks, embedding=embeddings)
-    vectordb.save_local(persist_directory)
-    print("✅ Vector store built and saved.")
+    index_name = "faq-assistant" # Must match your Pinecone index name
+    print(f"☁️ Uploading chunks to Pinecone index: {index_name}")
+    
+    vectordb = PineconeVectorStore.from_documents(
+        documents=chunks, 
+        embedding=embeddings, 
+        index_name=index_name
+    )
+    print("✅ Vector store built and saved to Pinecone.")
     return vectordb
 
 
@@ -70,13 +73,11 @@ def get_pdf_count(pdf_dir: str = PDF_DIR):
 def process_pdfs(pdf_dir: str = None, persist_directory: str = None):
     """Main function to process PDFs and build vector store."""
     pdf_dir = pdf_dir or get_pdf_source_dir()
-    persist_directory = persist_directory or get_vectorstore_dir()
 
     try:
         os.makedirs(pdf_dir, exist_ok=True)
-        os.makedirs(persist_directory, exist_ok=True)
-
         pdf_count = get_pdf_count(pdf_dir)
+        
         if pdf_count == 0:
             return False, f"No PDF files found in '{pdf_dir}'."
 
@@ -84,11 +85,11 @@ def process_pdfs(pdf_dir: str = None, persist_directory: str = None):
 
         docs = load_pdfs(pdf_dir)
         chunks = chunk_documents(docs)
-        build_vectorstore(chunks, persist_directory)
+        build_vectorstore(chunks)
 
         return True, (
             f"Successfully processed {pdf_count} PDF(s) and "
-            f"created vector store with {len(chunks)} chunks."
+            f"uploaded {len(chunks)} chunks to Pinecone."
         )
 
     except Exception as e:
@@ -96,7 +97,6 @@ def process_pdfs(pdf_dir: str = None, persist_directory: str = None):
 
 
 def main():
-    """Command-line entry point."""
     success, message = process_pdfs()
     if success:
         print(f"✅ {message}")
