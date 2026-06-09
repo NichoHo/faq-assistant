@@ -20,8 +20,7 @@ class HuggingFaceInferenceEmbeddings(Embeddings):
         return arr.tolist()
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        # The Goldilocks Fix: Process in batches of 15 to avoid timeouts and payload limits
-        batch_size = 15
+        batch_size = 30
         all_embeddings = []
         
         print(f"📦 Processing {len(texts)} chunks in batches of {batch_size}...")

@@ -32,7 +32,7 @@ def load_pdfs(pdf_dir: str):
     return documents
 
 
-def chunk_documents(docs, chunk_size=1000, chunk_overlap=200):
+def chunk_documents(docs, chunk_size=3000, chunk_overlap=300):
     """Split documents into chunks."""
     print("🔪 Splitting documents into chunks...")
     splitter = RecursiveCharacterTextSplitter(
