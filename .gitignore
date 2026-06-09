@@ -15,8 +15,10 @@ env/
 .env.local
 
 # --- Project Specific Data ---
-# Ignore the specific data folder containing PDFs
+# Ignore runtime upload data; use documents/ for deploy-time PDFs
 data/
+!documents/
+!documents/**
 # If you want to keep the folder structure but ignore files, use:
 # data/*
 # !data/.gitkeep

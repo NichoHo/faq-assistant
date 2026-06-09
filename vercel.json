@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "python build.py",
+  "functions": {
+    "app.py": {
+      "maxDuration": 60,
+      "memory": 3008
+    }
+  },
+  "env": {
+    "FAQ_DATA_ROOT": "/tmp/faq-assistant"
+  }
+}

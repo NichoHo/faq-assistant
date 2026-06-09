@@ -154,6 +154,12 @@
             fetch('/status')
             .then(response => response.json())
             .then(data => {
+                if (data.upload_enabled === false) {
+                    const uploadArea = document.getElementById('uploadArea');
+                    uploadArea.style.opacity = '0.5';
+                    uploadArea.style.pointerEvents = 'none';
+                    uploadArea.querySelector('p').textContent = 'Upload disabled (deployed mode)';
+                }
                 if (data.pdfs_uploaded) {
                     const pdfIcon = document.getElementById('pdfIcon');
                     pdfIcon.className = 'fas fa-check status-ready';
@@ -167,6 +173,8 @@
                     document.getElementById('vectorStatus').className = 'status-ready';
                     document.getElementById('questionInput').disabled = false;
                     document.getElementById('sendBtn').disabled = false;
+                } else if (data.deployment === 'vercel') {
+                    document.getElementById('vectorStatus').textContent = 'Add PDFs to documents/ and redeploy';
                 }
             });
         }

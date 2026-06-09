@@ -1,26 +1,23 @@
 import os
 
-# Updated imports for modular LangChain
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter  # Changed
-from langchain_huggingface.embeddings import HuggingFaceEmbeddings    # Also updated
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 
-PDF_DIR = "data/pdfs"
-PERSIST_DIR = "vectorstore"
+from config import PDF_DIR, get_pdf_source_dir, get_vectorstore_dir, ensure_runtime_dirs
+from embeddings import get_embeddings
 
-# Create directories if they don't exist
-os.makedirs(PDF_DIR, exist_ok=True)
-os.makedirs(PERSIST_DIR, exist_ok=True)
+ensure_runtime_dirs()
+
 
 def load_pdfs(pdf_dir: str):
     """Load all PDF files from directory."""
     print(f"📄 Loading PDFs from: {pdf_dir}")
-    pdf_files = [f for f in os.listdir(pdf_dir) if f.endswith('.pdf')]
-    
+    pdf_files = [f for f in os.listdir(pdf_dir) if f.endswith(".pdf")]
+
     if not pdf_files:
         raise FileNotFoundError(f"No PDF files found in {pdf_dir}")
-    
+
     documents = []
     for pdf_file in pdf_files:
         pdf_path = os.path.join(pdf_dir, pdf_file)
@@ -30,9 +27,10 @@ def load_pdfs(pdf_dir: str):
         for doc in docs:
             doc.metadata["source"] = pdf_file
         documents.extend(docs)
-    
+
     print(f"✅ Loaded {len(documents)} pages from {len(pdf_files)} PDF file(s).")
     return documents
+
 
 def chunk_documents(docs, chunk_size=1000, chunk_overlap=200):
     """Split documents into chunks."""
@@ -41,70 +39,71 @@ def chunk_documents(docs, chunk_size=1000, chunk_overlap=200):
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         length_function=len,
-        separators=["\n\n", "\n", ". ", " ", ""]
+        separators=["\n\n", "\n", ". ", " ", ""],
     )
     chunks = splitter.split_documents(docs)
     print(f"✅ Created {len(chunks)} chunks.")
     return chunks
 
-def build_vectorstore(chunks, persist_directory=PERSIST_DIR):
+
+def build_vectorstore(chunks, persist_directory=None):
     """Create embeddings and build FAISS vector store."""
+    persist_directory = persist_directory or get_vectorstore_dir()
     print("🤖 Creating embeddings model: all-MiniLM-L6-v2")
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model_kwargs={'device': 'cpu'}
-    )
+    embeddings = get_embeddings()
 
     print(f"💾 Building FAISS vector store at: {persist_directory}")
-    vectordb = FAISS.from_documents(
-        documents=chunks,
-        embedding=embeddings
-    )
-    
-    # Save the vector store
+    os.makedirs(persist_directory, exist_ok=True)
+    vectordb = FAISS.from_documents(documents=chunks, embedding=embeddings)
     vectordb.save_local(persist_directory)
     print("✅ Vector store built and saved.")
     return vectordb
+
 
 def get_pdf_count(pdf_dir: str = PDF_DIR):
     """Count PDF files in directory."""
     if not os.path.isdir(pdf_dir):
         return 0
-    return len([f for f in os.listdir(pdf_dir) if f.endswith('.pdf')])
+    return len([f for f in os.listdir(pdf_dir) if f.endswith(".pdf")])
 
-def process_pdfs(pdf_dir: str = PDF_DIR, persist_directory: str = PERSIST_DIR):
+
+def process_pdfs(pdf_dir: str = None, persist_directory: str = None):
     """Main function to process PDFs and build vector store."""
+    pdf_dir = pdf_dir or get_pdf_source_dir()
+    persist_directory = persist_directory or get_vectorstore_dir()
+
     try:
-        # Create directories if they don't exist
         os.makedirs(pdf_dir, exist_ok=True)
         os.makedirs(persist_directory, exist_ok=True)
-        
+
         pdf_count = get_pdf_count(pdf_dir)
         if pdf_count == 0:
             return False, f"No PDF files found in '{pdf_dir}'."
-        
+
         print(f"📊 Found {pdf_count} PDF file(s) to process.")
-        
-        # Load, chunk, and build vector store
+
         docs = load_pdfs(pdf_dir)
         chunks = chunk_documents(docs)
-        vectordb = build_vectorstore(chunks, persist_directory)
-        
-        return True, f"Successfully processed {pdf_count} PDF(s) and created vector store with {len(chunks)} chunks."
-        
+        build_vectorstore(chunks, persist_directory)
+
+        return True, (
+            f"Successfully processed {pdf_count} PDF(s) and "
+            f"created vector store with {len(chunks)} chunks."
+        )
+
     except Exception as e:
         return False, f"Error processing PDFs: {str(e)}"
+
 
 def main():
     """Command-line entry point."""
     success, message = process_pdfs()
-    
     if success:
         print(f"✅ {message}")
         return 0
-    else:
-        print(f"❌ {message}")
-        return 1
+    print(f"❌ {message}")
+    return 1
+
 
 if __name__ == "__main__":
-    exit(main())
+    raise SystemExit(main())
