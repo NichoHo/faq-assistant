@@ -1,4 +1,5 @@
 import os
+import time
 from typing import List
 from langchain_core.embeddings import Embeddings
 
@@ -19,12 +20,29 @@ class HuggingFaceInferenceEmbeddings(Embeddings):
         return arr.tolist()
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        # This sends all chunks in ONE request instead of looping!
-        results = self._client.feature_extraction(texts)
-        return [self._to_vector(res) for res in results]
+        # The Goldilocks Fix: Process in batches of 15 to avoid timeouts and payload limits
+        batch_size = 15
+        all_embeddings = []
+        
+        print(f"📦 Processing {len(texts)} chunks in batches of {batch_size}...")
+        
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            try:
+                results = self._client.feature_extraction(batch)
+                all_embeddings.extend([self._to_vector(res) for res in results])
+                
+                # Tiny pause to respect Hugging Face free tier rate limits
+                time.sleep(0.2)
+            except Exception as e:
+                print(f"❌ Error processing batch {i} to {i+batch_size}: {str(e)}")
+                raise e
+                
+        return all_embeddings
 
     def embed_query(self, text: str) -> List[float]:
         return self._to_vector(self._client.feature_extraction(text))
+
 
 def get_embeddings():
     global _embeddings
