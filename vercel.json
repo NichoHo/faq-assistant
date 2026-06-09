@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "app.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxDuration": 60
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
@@ -15,6 +12,12 @@
       "dest": "app.py"
     }
   ],
+  "functions": {
+    "app.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{data/**,requirements-local.txt,.venv/**,venv/**,**/__pycache__/**}"
+    }
+  },
   "env": {
     "FAQ_DATA_ROOT": "/tmp/faq-assistant"
   }

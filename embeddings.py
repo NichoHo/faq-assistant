@@ -9,32 +9,31 @@ class HuggingFaceInferenceEmbeddings(Embeddings):
 
     def __init__(self, model: str, api_token: str):
         from huggingface_hub import InferenceClient
+
         self.model = model
         self._client = InferenceClient(model=model, token=api_token)
 
     def _to_vector(self, result) -> List[float]:
         import numpy as np
+
         arr = np.asarray(result, dtype=np.float32)
         if arr.ndim == 2:
             arr = arr[0] if arr.shape[0] == 1 else arr.mean(axis=0)
         return arr.tolist()
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        batch_size = 30
+        import time
+        # Send chunks in batches to prevent API spam and timeouts
+        batch_size = 15
         all_embeddings = []
-        
-        print(f"📦 Processing {len(texts)} chunks in batches of {batch_size}...")
         
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
             try:
                 results = self._client.feature_extraction(batch)
                 all_embeddings.extend([self._to_vector(res) for res in results])
-                
-                # Tiny pause to respect Hugging Face free tier rate limits
-                time.sleep(0.2)
+                time.sleep(0.2) # Brief pause to respect API limits
             except Exception as e:
-                print(f"❌ Error processing batch {i} to {i+batch_size}: {str(e)}")
                 raise e
                 
         return all_embeddings
