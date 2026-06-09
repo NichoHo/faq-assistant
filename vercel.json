@@ -7,6 +7,12 @@
       "memory": 2048
     }
   },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ],
   "env": {
     "FAQ_DATA_ROOT": "/tmp/faq-assistant"
   }
