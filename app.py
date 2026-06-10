@@ -28,6 +28,7 @@ def upload_file():
         return jsonify({"error": "No file part"}), 400
 
     file = request.files["file"]
+    session_id = request.form.get("session_id", "default_session") # Get session ID
 
     if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
@@ -36,61 +37,42 @@ def upload_file():
         from werkzeug.utils import secure_filename
         import time
 
-        base_filename = secure_filename(file.filename)
-        # Add a unique timestamp so Vercel never sees a duplicate name
-        filename = f"{int(time.time())}_{base_filename}"
-        file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        
-        # Save locally to /tmp for PyPDFLoader to read
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], f"{int(time.time())}_{filename}")
         file.save(file_path)
 
         try:
-            # Removed Vercel Blob Upload code here
             from pdf_ingest import process_pdfs
-
-            # Process and send to Pinecone
-            success, message = process_pdfs()
-            if success:
-                from rag_pipeline import reset_vectorstore_cache
-                reset_vectorstore_cache()
-                return jsonify({"message": f"File {filename} successfully indexed!"})
+            success, message = process_pdfs(file_path, session_id) # Pass to ingest
             
-            return jsonify({"error": f"Error processing PDF: {message}"}), 500
+            if success:
+                return jsonify({"message": "File indexed successfully!"})
+            return jsonify({"error": message}), 500
         except Exception as e:
-            return jsonify({"error": f"Error processing PDF: {str(e)}"}), 500
+            return jsonify({"error": str(e)}), 500
 
-    return jsonify({"error": "Invalid file type. Only PDF files are allowed."}), 400
-
+    return jsonify({"error": "Invalid file type."}), 400
 
 @app.route("/ask", methods=["POST"])
 def ask_question():
     data = request.get_json()
     question = data.get("question", "").strip()
+    session_id = data.get("session_id", "default_session") # Get session ID
 
     if not question:
         return jsonify({"error": "Please enter a question"}), 400
 
     try:
         from rag_pipeline import answer_question
-        answer, docs = answer_question(question, k=4, return_docs=True)
-
-        sources = []
-        for i, doc in enumerate(docs, 1):
-            sources.append({
-                "id": i,
-                "source": os.path.basename(doc.metadata.get("source", "Unknown")),
-                "page": doc.metadata.get("page", "N/A"),
-                "content": doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content,
-            })
+        answer, docs = answer_question(question, session_id, k=4, return_docs=True) # Pass to RAG
 
         return jsonify({
             "question": question,
             "answer": answer,
-            "sources": sources,
+            "sources": []
         })
-
     except Exception as e:
-        return jsonify({"error": f"Error getting answer: {str(e)}"}), 500
+        return jsonify({"error": f"Error: {str(e)}"}), 500
 
 @app.route("/status")
 def check_status():

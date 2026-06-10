@@ -25,6 +25,9 @@
                 <i class="fas fa-check-circle success-icon"></i>
                 <p class="upload-title" style="color: var(--accent);">Document Indexed!</p>
                 <p class="upload-subtitle">Ready for your questions.</p>
+                <button class="replace-file-btn" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-sync-alt"></i> Upload Different File
+                </button>
             </div>
             
             <div class="upload-progress" id="uploadProgress" style="display: none;">
@@ -73,6 +76,7 @@
 
     <script>
         let isProcessing = false;
+        const currentSessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         
         document.addEventListener('DOMContentLoaded', function() {
             checkStatus();
@@ -110,8 +114,12 @@
                 return;
             }
             
+            // Clear chat if they are overwriting an old PDF
+            document.getElementById('chatContainer').innerHTML = '';
+            
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('session_id', currentSessionId);
             
             const uploadProgress = document.getElementById('uploadProgress');
             const progressFill = document.getElementById('progressFill');
@@ -194,7 +202,10 @@
             fetch('/ask', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: question })
+                body: JSON.stringify({ 
+                    question: question,
+                    session_id: currentSessionId
+                })
             })
             .then(response => response.json())
             .then(data => {
