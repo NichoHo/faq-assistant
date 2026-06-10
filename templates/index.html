@@ -79,8 +79,6 @@
         const currentSessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         
         document.addEventListener('DOMContentLoaded', function() {
-            checkStatus();
-            
             const fileInput = document.getElementById('fileInput');
             const uploadArea = document.getElementById('uploadArea');
             
@@ -136,7 +134,7 @@
                 if (data.error) throw new Error(data.error);
                 progressFill.style.width = '100%';
                 progressText.textContent = 'Complete';
-                setTimeout(checkStatus, 1000);
+                setTimeout(showSuccessState, 1000);
                 setTimeout(() => {
                     uploadProgress.style.display = 'none';
                     progressText.style.display = 'none';
@@ -149,38 +147,32 @@
             });
         }
         
-        function checkStatus() {
-            fetch('/status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.vectorstore_ready) {
-                    // Update Database Status
-                    const dbIcon = document.getElementById('dbIcon');
-                    dbIcon.className = 'fas fa-check status-ready';
-                    document.getElementById('vectorStatus').textContent = 'Database: Ready';
-                    document.getElementById('vectorStatus').className = 'status-ready';
-                    
-                    // Enable Chat
-                    document.getElementById('questionInput').disabled = false;
-                    document.getElementById('sendBtn').disabled = false;
-                    
-                    // Transform the UI to make the upload explicitly known
-                    document.getElementById('uploadArea').style.display = 'none';
-                    document.getElementById('uploadSuccess').style.display = 'block';
-                    
-                    // Update Welcome Message
-                    const welcomeMessage = document.getElementById('welcomeMessage');
-                    if (welcomeMessage && welcomeMessage.style.display !== 'none') {
-                         welcomeMessage.innerHTML = `
-                            <div class="welcome-icon" style="color: var(--accent);">
-                                <i class="fas fa-check"></i>
-                            </div>
-                            <p style="color: var(--text-primary);">Document successfully parsed and indexed.</p>
-                            <p style="color: var(--text-secondary); margin-top: 10px;">Ask a question below to search the contents.</p>
-                         `;
-                    }
-                }
-            });
+        function showSuccessState() {
+            // Update Database Status
+            const dbIcon = document.getElementById('dbIcon');
+            dbIcon.className = 'fas fa-check status-ready';
+            document.getElementById('vectorStatus').textContent = 'Database: Ready';
+            document.getElementById('vectorStatus').className = 'status-ready';
+            
+            // Enable Chat
+            document.getElementById('questionInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            
+            // Transform the UI to make the upload explicitly known
+            document.getElementById('uploadArea').style.display = 'none';
+            document.getElementById('uploadSuccess').style.display = 'block';
+            
+            // Update Welcome Message
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            if (welcomeMessage && welcomeMessage.style.display !== 'none') {
+                 welcomeMessage.innerHTML = `
+                    <div class="welcome-icon" style="color: var(--accent);">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <p style="color: var(--text-primary);">Document successfully parsed and indexed.</p>
+                    <p style="color: var(--text-secondary); margin-top: 10px;">Ask a question below to search the contents.</p>
+                 `;
+            }
         }
         
         function useExample(button) {
