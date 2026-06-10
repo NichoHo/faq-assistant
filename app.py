@@ -45,15 +45,7 @@ def upload_file():
         file.save(file_path)
 
         try:
-            # Back up the file using the official Vercel SDK
-            from vercel import blob
-            
-            blob.upload_file(
-                local_path=file_path,
-                path=filename,
-                access="private"
-            )
-                
+            # Removed Vercel Blob Upload code here
             from pdf_ingest import process_pdfs
 
             # Process and send to Pinecone
@@ -61,7 +53,7 @@ def upload_file():
             if success:
                 from rag_pipeline import reset_vectorstore_cache
                 reset_vectorstore_cache()
-                return jsonify({"message": f"File {filename} successfully saved to cloud and indexed!"})
+                return jsonify({"message": f"File {filename} successfully indexed!"})
             
             return jsonify({"error": f"Error processing PDF: {message}"}), 500
         except Exception as e:
