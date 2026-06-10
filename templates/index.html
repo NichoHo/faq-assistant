@@ -57,7 +57,19 @@
 
         <div class="input-area">
             <div class="input-container">
+                <div id="mobileUploadStatus" class="mobile-upload-status" style="display: none;">
+                    <i class="fas fa-file-pdf" style="color: var(--accent);"></i>
+                    <span id="mobileUploadText" class="mobile-upload-text">Uploading...</span>
+                    <button class="remove-file-btn" onclick="document.getElementById('fileInput').click()" title="Replace File">
+                        <i class="fas fa-sync-alt" style="font-size: 0.8rem;"></i>
+                    </button>
+                </div>
+
                 <div class="input-wrapper">
+                    <button class="attach-btn" id="attachBtn" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+
                     <input type="text" 
                            id="questionInput" 
                            placeholder="Send a message..." 
@@ -76,6 +88,7 @@
 
     <script>
         let isProcessing = false;
+        let currentFileName = '';
         const currentSessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
         window.addEventListener('beforeunload', function () {
@@ -122,6 +135,14 @@
                 return;
             }
             
+            currentFileName = file.name; // Save the name
+            
+            // Show mobile uploading pill if on small screen
+            if (window.innerWidth <= 768) {
+                document.getElementById('mobileUploadStatus').style.display = 'flex';
+                document.getElementById('mobileUploadText').textContent = 'Uploading...';
+            }
+
             // Clear chat if they are overwriting an old PDF
             document.getElementById('chatContainer').innerHTML = '';
             
@@ -182,6 +203,12 @@
                     <p style="color: var(--text-primary);">Document successfully parsed and indexed.</p>
                     <p style="color: var(--text-secondary); margin-top: 10px;">Ask a question below to search the contents.</p>
                  `;
+            }
+
+            const mobileStatus = document.getElementById('mobileUploadStatus');
+            if (mobileStatus && window.innerWidth <= 768) {
+                mobileStatus.style.display = 'flex';
+                document.getElementById('mobileUploadText').textContent = currentFileName;
             }
         }
         

@@ -395,6 +395,72 @@ body {
     40% { transform: scale(1); }
 }
 
+/* --- Mobile Input Styles --- */
+.attach-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-right: 5px;
+}
+
+.attach-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(255,255,255,0.05);
+}
+
+.mobile-upload-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 16px;
+    width: fit-content;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    animation: fadeInUp 0.3s ease-out forwards;
+}
+
+.mobile-upload-text {
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.remove-file-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px 4px;
+    transition: color 0.2s;
+}
+
+.remove-file-btn:hover {
+    color: var(--text-primary);
+}
+
+/* Hide these elements completely on larger desktop screens */
+@media (min-width: 769px) {
+    .attach-btn { 
+        display: none; 
+    }
+    .mobile-upload-status { 
+        display: none !important; 
+    }
+}
+
 @media (max-width: 768px) {
     .sidebar { display: none; }
     .message-wrapper { padding: 0 15px; }
