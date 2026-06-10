@@ -12,42 +12,33 @@
 
     <div class="sidebar">
         <div class="sidebar-section">
-            <div class="sidebar-title">Documents</div>
+            <div class="sidebar-title">Knowledge Base</div>
+            
             <div class="upload-area" id="uploadArea">
-                <i class="fas fa-cloud-upload-alt" style="font-size: 24px; margin-bottom: 8px;"></i>
-                <p>Drop PDF here</p>
+                <i class="fas fa-file-upload upload-icon"></i>
+                <p class="upload-title">Upload Document</p>
+                <p class="upload-subtitle">Drop PDF here to index</p>
                 <input type="file" id="fileInput" accept=".pdf" hidden>
+            </div>
+            
+            <div class="upload-success" id="uploadSuccess" style="display: none;">
+                <i class="fas fa-check-circle success-icon"></i>
+                <p class="upload-title" style="color: var(--accent);">Document Indexed!</p>
+                <p class="upload-subtitle">Ready for your questions.</p>
             </div>
             
             <div class="upload-progress" id="uploadProgress" style="display: none;">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
-            <div id="progressText" style="font-size: 0.75rem; margin-top: 5px; color: #8e8ea0; display: none;"></div>
+            <div id="progressText" class="progress-text" style="display: none;"></div>
         </div>
 
-        <div class="sidebar-section">
-            <div class="sidebar-title">Status</div>
-            <div class="status-item">
-                <i class="fas fa-file-pdf" id="pdfIcon"></i>
-                <span id="pdfStatus">No PDF uploaded</span>
-            </div>
+        <div class="sidebar-section" style="border:none; margin-top: auto; padding-bottom: 20px;">
+            <div class="sidebar-title">System Status</div>
             <div class="status-item">
                 <i class="fas fa-database" id="dbIcon"></i>
-                <span id="vectorStatus">Not Ready</span>
+                <span id="vectorStatus">Database: Waiting...</span>
             </div>
-        </div>
-
-        <div class="sidebar-section" style="border:none; flex-grow: 1; overflow-y: auto;">
-            <div class="sidebar-title">Examples</div>
-            <button class="example-btn" onclick="useExample(this)">
-                <i class="far fa-comment-alt"></i> Dress code policy?
-            </button>
-            <button class="example-btn" onclick="useExample(this)">
-                <i class="far fa-comment-alt"></i> Vacation days?
-            </button>
-            <button class="example-btn" onclick="useExample(this)">
-                <i class="far fa-comment-alt"></i> Remote work?
-            </button>
         </div>
     </div>
 
@@ -154,27 +145,32 @@
             fetch('/status')
             .then(response => response.json())
             .then(data => {
-                if (data.upload_enabled === false) {
-                    const uploadArea = document.getElementById('uploadArea');
-                    uploadArea.style.opacity = '0.5';
-                    uploadArea.style.pointerEvents = 'none';
-                    uploadArea.querySelector('p').textContent = 'Upload disabled (deployed mode)';
-                }
-                if (data.pdfs_uploaded) {
-                    const pdfIcon = document.getElementById('pdfIcon');
-                    pdfIcon.className = 'fas fa-check status-ready';
-                    document.getElementById('pdfStatus').textContent = `${data.pdf_count} PDF Loaded`;
-                    document.getElementById('pdfStatus').className = 'status-ready';
-                }
                 if (data.vectorstore_ready) {
+                    // Update Database Status
                     const dbIcon = document.getElementById('dbIcon');
                     dbIcon.className = 'fas fa-check status-ready';
-                    document.getElementById('vectorStatus').textContent = 'Ready';
+                    document.getElementById('vectorStatus').textContent = 'Database: Ready';
                     document.getElementById('vectorStatus').className = 'status-ready';
+                    
+                    // Enable Chat
                     document.getElementById('questionInput').disabled = false;
                     document.getElementById('sendBtn').disabled = false;
-                } else if (data.deployment === 'vercel') {
-                    document.getElementById('vectorStatus').textContent = 'Add PDFs to documents/ and redeploy';
+                    
+                    // Transform the UI to make the upload explicitly known
+                    document.getElementById('uploadArea').style.display = 'none';
+                    document.getElementById('uploadSuccess').style.display = 'block';
+                    
+                    // Update Welcome Message
+                    const welcomeMessage = document.getElementById('welcomeMessage');
+                    if (welcomeMessage && welcomeMessage.style.display !== 'none') {
+                         welcomeMessage.innerHTML = `
+                            <div class="welcome-icon" style="color: var(--accent);">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <p style="color: var(--text-primary);">Document successfully parsed and indexed.</p>
+                            <p style="color: var(--text-secondary); margin-top: 10px;">Ask a question below to search the contents.</p>
+                         `;
+                    }
                 }
             });
         }
