@@ -43,3 +43,15 @@ def process_pdfs(file_path: str, session_id: str):
 
     except Exception as e:
         return False, f"Error processing PDF: {str(e)}"
+    
+def delete_namespace(session_id: str):
+    """Deletes all vectors in a specific session namespace to free up Pinecone storage."""
+    try:
+        pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
+        index = pc.Index("faq-assistant")
+        index.delete(delete_all=True, namespace=session_id)
+        print(f"🧹 Successfully deleted orphaned namespace: {session_id}")
+        return True
+    except Exception as e:
+        print(f"⚠️ Could not delete namespace {session_id}: {str(e)}")
+        return False

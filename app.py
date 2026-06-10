@@ -85,5 +85,16 @@ def check_status():
         "deployment": "vercel" if os.environ.get("VERCEL") == "1" else "local",
     })
 
+@app.route("/cleanup", methods=["POST"])
+def cleanup_session():
+    data = request.get_json()
+    session_id = data.get("session_id")
+    
+    if session_id:
+        from pdf_ingest import delete_namespace
+        delete_namespace(session_id)
+        
+    return jsonify({"status": "cleaned"})
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

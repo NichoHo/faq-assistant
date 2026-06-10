@@ -77,6 +77,16 @@
     <script>
         let isProcessing = false;
         const currentSessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+        window.addEventListener('beforeunload', function () {
+            // Using keepalive: true ensures the request finishes even as the browser kills the page
+            fetch('/cleanup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: currentSessionId }),
+                keepalive: true
+            });
+        });
         
         document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('fileInput');
